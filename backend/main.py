@@ -17,8 +17,11 @@ async def lifespan(app: FastAPI):
     print("Model loaded successfully!")        
     yield 
 
-app = FastAPI(title="Scratch Neural Network Digit Recognizer", lifespan=lifespan)
-
+app = FastAPI(
+    title="Scratch Neural Network Digit Recognizer", 
+    description="Welcome to the API! **[⬅️ Click here to go back to the Drawing Canvas](/)**",
+    lifespan=lifespan
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], # Allows all websites to make requests
@@ -67,8 +70,8 @@ ui = gr.Interface(
     inputs=gr.Sketchpad(label="Draw a digit (0-9) here"), 
     outputs=gr.Text(label="Network Prediction"),
     title="🔢 Scratch Neural Network",
-    description="A custom 2-layer neural network built entirely with NumPy. Draw a digit below!"
+    description="A custom 2-layer neural network built entirely with NumPy. <br><br> **[👉 Click here to view the Developer API Docs](/docs)**",
+    flagging_mode="never" 
 )
 
-# Mount the Gradio app onto your existing FastAPI app at the root URL ("/")
 app = gr.mount_gradio_app(app, ui, path="/")
