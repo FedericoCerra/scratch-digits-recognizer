@@ -43,35 +43,40 @@ def predict_digit(data: ImageInput):
 def process_drawing(canvas_data):
     """Takes the drawing from Gradio, resizes it, and sends it to our own API."""
     if canvas_data is None:
-        return "Please draw a digit."
+        return {"Please draw a digit": 1.0}
         
-    # Gradio's Sketchpad sends a dict. The 'composite' key holds the RGBA image array.
     img_array = canvas_data["composite"]
-    
-    # Convert to grayscale ("L") and shrink to 28x28 to match MNIST
     img = Image.fromarray(img_array).convert("L").resize((28, 28))
-    
-    # Flatten the 28x28 image into a single list of 784 pixels
     pixels = np.array(img).flatten().tolist()
     
     try:
         response = requests.post("http://127.0.0.1:7860/predict", json={"pixels": pixels})
         if response.status_code == 200:
             result = response.json()
-            return f"🧠 I think it's a: {result['predicted_class']}"
+            
+            # Check if your API returns a list of probabilities for all 10 digits
+            if "probabilities" in result:
+                probs = result["probabilities"]
+                # Zip the digits "0"-"9" with their percentage confidences
+                confidence_dict = {str(i): float(probs[i]) for i in range(10)}
+                return confidence_dict
+            else:
+                # Fallback: If your API only returns the winning class, just show it at 100%
+                winning_class = str(result['predicted_class'])
+                return {f"Digit {winning_class}": 1.0}
         else:
-            return "API Error: Could not process image."
+            return {"API Error": 1.0}
     except Exception as e:
-        return f"Error connecting to backend: {str(e)}"
+        return {"Connection Error": 1.0}
 
 # Create the Gradio interface
 ui = gr.Interface(
     fn=process_drawing,
     inputs=gr.Sketchpad(label="Draw a digit (0-9) here"), 
-    outputs=gr.Text(label="Network Prediction"),
+    outputs=gr.Label(num_top_classes=3, label="AI Confidence Level 🧠"), # <-- THIS IS THE UPGRADE
     title="🔢 Scratch Neural Network",
     description="A custom 2-layer neural network built entirely with NumPy. <br><br> **[👉 Click here to view the Developer API Docs](/docs)**",
-    flagging_mode="never" 
+    flagging_mode="never"
 )
 
 app = gr.mount_gradio_app(app, ui, path="/")
