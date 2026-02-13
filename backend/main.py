@@ -67,7 +67,7 @@ def process_drawing(canvas_data):
 # Create the Gradio interface
 ui = gr.Interface(
     fn=process_drawing,
-    inputs=gr.Sketchpad(label="Draw a digit (0-9) here", crop_size=(28, 28)),
+    inputs=gr.Sketchpad(label="Draw a digit (0-9) here"), 
     outputs=gr.Text(label="Network Prediction"),
     title="🔢 Scratch Neural Network",
     description="A custom 2-layer neural network built entirely with NumPy. Draw a digit below!"
