@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
     print("Model loaded successfully!")        
     yield 
 
-app = FastAPI(title="Scratch NN Digit Recognizer", lifespan=lifespan)
+app = FastAPI(title="Scratch Neural Network Digit Recognizer", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
