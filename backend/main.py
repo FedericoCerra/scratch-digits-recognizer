@@ -45,20 +45,23 @@ def process_drawing(canvas_data):
     if canvas_data is None:
         return {"Please draw a digit": 1.0}
         
-    # Gradio's Sketchpad sends a dict. The 'composite' key holds the RGBA image array.
     img_array = canvas_data["composite"]
     
-    # Convert to grayscale ("L") and shrink to 28x28 to match MNIST
-    img = Image.fromarray(img_array).convert("L").resize((28, 28))
+    # --- 🚨 THE FIX 🚨 ---
+    # Extract ONLY the Alpha channel (index 3). 
+    # This ignores colors and gives us pure White ink on a Black background!
+    alpha_channel = img_array[:, :, 3]
     
-    # Flatten the 28x28 image into a single list of 784 pixels
+    # Convert that single channel into an image and shrink it
+    img = Image.fromarray(alpha_channel).resize((28, 28))
+    # ----------------------
+    
     pixels = np.array(img).flatten().tolist()
     
     try:
         response = requests.post("http://127.0.0.1:7860/predict", json={"pixels": pixels})
         if response.status_code == 200:
             result = response.json()
-            
             if "all_probabilities" in result:
                 probs = result["all_probabilities"]
                 confidence_dict = {str(i): float(probs[i]) for i in range(10)}

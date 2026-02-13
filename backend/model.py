@@ -24,8 +24,9 @@ class ScratchNeuralNet:
     def relu(self, Z):
         return np.maximum(0, Z)
 
-    def softmax(self, Z): 
+    def softmax(self, Z, temperature=3.0): 
         # Divide by temperature to "soften" the massive weights
+        Z = Z / temperature
         expZ = np.exp(Z - np.max(Z, axis=0))
         return expZ / np.sum(expZ, axis=0)
 
