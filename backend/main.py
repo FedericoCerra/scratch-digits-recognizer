@@ -47,7 +47,6 @@ def process_drawing(canvas_data):
         
     img_array = canvas_data["composite"]
     
-    # --- 🚨 THE FIX 🚨 ---
     # Extract ONLY the Alpha channel (index 3). 
     # This ignores colors and gives us pure White ink on a Black background!
     alpha_channel = img_array[:, :, 3]
