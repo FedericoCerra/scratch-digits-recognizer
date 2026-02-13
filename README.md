@@ -1,3 +1,12 @@
+---
+title: Scratch Digits Recognizer
+emoji: 🔢
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
 # Scratch Neural Network Digit Recognizer
 
 A full-stack machine learning project featuring a **2-layer neural network built entirely from scratch** (using only NumPy), wrapped in a **FastAPI** REST service, and fully **containerized with Docker**.
