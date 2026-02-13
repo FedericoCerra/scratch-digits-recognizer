@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
 from fastapi.responses import RedirectResponse
-
+from fastapi.middleware.cors import CORSMiddleware
 from .schemas import ImageInput, PredictionOutput
 from .model import ScratchNeuralNet
 
@@ -16,7 +16,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Scratch NN Digit Recognizer", lifespan=lifespan)
 
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allows all websites to make requests
+    allow_credentials=True,
+    allow_methods=["*"], # Allows POST, GET, etc.
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def read_root():
