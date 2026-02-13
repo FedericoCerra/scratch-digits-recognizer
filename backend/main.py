@@ -4,7 +4,10 @@ from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from .schemas import ImageInput, PredictionOutput
 from .model import ScratchNeuralNet
-
+import gradio as gr
+import numpy as np
+from PIL import Image
+import requests
 
 nn = ScratchNeuralNet()
 @asynccontextmanager
@@ -36,3 +39,39 @@ def predict_digit(data: ImageInput):
     result_dict = nn.predict(data.pixels)
     
     return PredictionOutput(**result_dict)
+
+def process_drawing(canvas_data):
+    """Takes the drawing from Gradio, resizes it, and sends it to our own API."""
+    if canvas_data is None:
+        return "Please draw a digit."
+        
+    # Gradio's Sketchpad sends a dict. The 'composite' key holds the RGBA image array.
+    img_array = canvas_data["composite"]
+    
+    # Convert to grayscale ("L") and shrink to 28x28 to match MNIST
+    img = Image.fromarray(img_array).convert("L").resize((28, 28))
+    
+    # Flatten the 28x28 image into a single list of 784 pixels
+    pixels = np.array(img).flatten().tolist()
+    
+    try:
+        response = requests.post("http://127.0.0.1:7860/predict", json={"pixels": pixels})
+        if response.status_code == 200:
+            result = response.json()
+            return f"🧠 I think it's a: {result['predicted_class']}"
+        else:
+            return "API Error: Could not process image."
+    except Exception as e:
+        return f"Error connecting to backend: {str(e)}"
+
+# Create the Gradio interface
+ui = gr.Interface(
+    fn=process_drawing,
+    inputs=gr.Sketchpad(label="Draw a digit (0-9) here", crop_size=(28, 28)),
+    outputs=gr.Text(label="Network Prediction"),
+    title="🔢 Scratch Neural Network",
+    description="A custom 2-layer neural network built entirely with NumPy. Draw a digit below!"
+)
+
+# Mount the Gradio app onto your existing FastAPI app at the root URL ("/")
+app = gr.mount_gradio_app(app, ui, path="/")
