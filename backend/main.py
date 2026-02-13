@@ -41,41 +41,52 @@ def predict_digit(data: ImageInput):
     return PredictionOutput(**result_dict)
 
 def process_drawing(canvas_data):
-    """Takes the drawing from Gradio, resizes it, and sends it to our own API."""
     if canvas_data is None:
         return {"Please draw a digit": 1.0}
-        
+
     img_array = canvas_data["composite"]
-    
-    # Extract ONLY the Alpha channel (index 3). 
-    # This ignores colors and gives us pure White ink on a Black background!
+
+    # Extract alpha channel (white ink on transparent background)
     alpha_channel = img_array[:, :, 3]
-    
-    # Convert that single channel into an image and shrink it
-    img = Image.fromarray(alpha_channel).resize((28, 28))
-    # ----------------------
-    
-    pixels = np.array(img).flatten().tolist()
-    
+    # Convert to PIL image
+    img = Image.fromarray(alpha_channel)
+    # Resize to MNIST size
+    img = img.resize((28, 28))
+    # Convert to numpy
+    img_np = np.array(img)
+
+    # Ensure correct orientation:
+    # If background is white and digit black, invert.
+    if np.mean(img_np) > 127:
+        img_np = 255 - img_np
+
+    pixels = img_np.flatten().tolist()
+
     try:
-        response = requests.post("http://127.0.0.1:7860/predict", json={"pixels": pixels})
+        response = requests.post(
+            "http://127.0.0.1:7860/predict",
+            json={"pixels": pixels}
+        )
+
         if response.status_code == 200:
             result = response.json()
-            if "all_probabilities" in result:
-                probs = result["all_probabilities"]
-                confidence_dict = {str(i): float(probs[i]) for i in range(10)}
-                return confidence_dict
-            else:
-                return {"Error: Check API Schema": 1.0}
+
+            probs = result["all_probabilities"]
+            confidence_dict = {str(i): float(probs[i]) for i in range(10)}
+
+            return confidence_dict
+
         else:
             return {"API Error": 1.0}
-    except Exception as e:
+
+    except Exception:
         return {"Connection Error": 1.0}
+
 
 ui = gr.Interface(
     fn=process_drawing,
-    inputs=gr.Sketchpad(label="Draw a digit (0-9) here"), 
-    outputs=gr.Label(num_top_classes=3, label="AI Confidence Level 🧠"), # Displays the top 3 bar charts
+    inputs=gr.Sketchpad(label="Draw a digit (0-9) here"),
+    outputs=gr.Label(num_top_classes=3, label="AI Confidence Level 🧠"),
     title="🔢 Scratch Neural Network",
     description="A custom 2-layer neural network built entirely with NumPy. <br><br> **[👉 Click here to view the Developer API Docs](/docs)**",
     flagging_mode="never"
