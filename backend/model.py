@@ -24,7 +24,9 @@ class ScratchNeuralNet:
     def relu(self, Z):
         return np.maximum(0, Z)
 
-    def softmax(self, Z): 
+    def softmax(self, Z, temperature=3.0): 
+        # Divide by temperature to "soften" the massive weights
+        Z = Z / temperature
         expZ = np.exp(Z - np.max(Z, axis=0))
         return expZ / np.sum(expZ, axis=0)
 
@@ -37,10 +39,10 @@ class ScratchNeuralNet:
         Z1 = self.W1 @ X + self.b1
         A1 = self.relu(Z1)
         Z2 = self.W2 @ A1 + self.b2
+        
         A2 = self.softmax(Z2) 
         
         prediction_idx = int(np.argmax(A2, axis=0)[0])
-        # Convert NumPy array to standard Python list for JSON
         all_probs = [float(p) for p in A2.flatten().tolist()]
         
         return {
