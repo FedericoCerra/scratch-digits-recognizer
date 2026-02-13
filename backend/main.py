@@ -27,9 +27,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def read_root():
-    return RedirectResponse(url="/docs")
 
 @app.post("/predict", response_model=PredictionOutput)
 def predict_digit(data: ImageInput):
