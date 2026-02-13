@@ -12,9 +12,7 @@ class ScratchNeuralNet:
     def load_model(self, model_path="../models/mnist_weights.pkl"):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         full_path = os.path.join(base_dir, model_path)
-        
-        print(f"Loading model from: {full_path}")
-        
+            
         with open(full_path, 'rb') as f:
             data = pickle.load(f)
             

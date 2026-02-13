@@ -2,16 +2,16 @@ from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
 from fastapi.responses import RedirectResponse
 
-from schemas import ImageInput, PredictionOutput
-from model import ScratchNeuralNet
+from .schemas import ImageInput, PredictionOutput
+from .model import ScratchNeuralNet
 
 
 nn = ScratchNeuralNet()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("🚀 Loading Neural Network weights...")
+    print("Loading Neural Network weights...")
     nn.load_model()
-    print("✅ Model loaded successfully!")        
+    print("Model loaded successfully!")        
     yield 
 
 app = FastAPI(title="Scratch NN Digit Recognizer", lifespan=lifespan)
