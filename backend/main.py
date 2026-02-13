@@ -6,7 +6,7 @@ from .schemas import ImageInput, PredictionOutput
 from .model import ScratchNeuralNet
 import gradio as gr
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 import requests
 
 nn = ScratchNeuralNet()
@@ -44,23 +44,31 @@ def process_drawing(canvas_data):
     if canvas_data is None:
         return {"Please draw a digit": 1.0}
 
+    # 1. Get the raw RGBA image from Gradio
     img_array = canvas_data["composite"]
+    img = Image.fromarray(img_array)
 
-    # Extract alpha channel (white ink on transparent background)
-    alpha_channel = img_array[:, :, 3]
-    # Convert to PIL image
-    img = Image.fromarray(alpha_channel)
-    # Resize to MNIST size
-    img = img.resize((28, 28))
-    # Convert to numpy
-    img_np = np.array(img)
+    # 2. Safety Net: Create a pure white background
+    background = Image.new("RGB", img.size, (255, 255, 255))
+    
+    # 3. Paste the drawing over the white background (using its own transparency as a mask)
+    # This guarantees we have a black drawing on a white background
+    if img.mode == 'RGBA':
+        background.paste(img, mask=img.split()[3])
+    else:
+        background.paste(img)
 
-    # Ensure correct orientation:
-    # If background is white and digit black, invert.
-    if np.mean(img_np) > 127:
-        img_np = 255 - img_np
+    # 4. Convert to Grayscale
+    gray_img = background.convert("L")
 
-    pixels = img_np.flatten().tolist()
+    # 5. Invert it! (MNIST expects White ink on a Black background)
+    mnist_img = ImageOps.invert(gray_img)
+
+    # 6. Shrink to 28x28
+    mnist_img = mnist_img.resize((28, 28))
+
+    # 7. Flatten into our 784 numbers
+    pixels = np.array(mnist_img).flatten().tolist()
 
     try:
         response = requests.post(
@@ -70,18 +78,17 @@ def process_drawing(canvas_data):
 
         if response.status_code == 200:
             result = response.json()
-
-            probs = result["all_probabilities"]
-            confidence_dict = {str(i): float(probs[i]) for i in range(10)}
-
-            return confidence_dict
-
+            if "all_probabilities" in result:
+                probs = result["all_probabilities"]
+                confidence_dict = {str(i): float(probs[i]) for i in range(10)}
+                return confidence_dict
+            else:
+                return {"Error: Check API Schema": 1.0}
         else:
             return {"API Error": 1.0}
 
     except Exception:
         return {"Connection Error": 1.0}
-
 
 ui = gr.Interface(
     fn=process_drawing,
